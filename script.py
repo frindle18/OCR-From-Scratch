@@ -1,7 +1,10 @@
 import math
 import os
 
+import behold
+
 DATA_DIR = 'data'
+IMAGES_DIR = 'imgs'
 
 TEST_IMAGES_FILE = os.path.join(DATA_DIR, 't10k-images.idx3-ubyte')
 TEST_LABELS_FILE = os.path.join(DATA_DIR, 't10k-labels.idx1-ubyte')
@@ -9,8 +12,8 @@ TRAIN_IMAGES_FILE = os.path.join(DATA_DIR, 'train-images.idx3-ubyte')
 TRAIN_LABELS_FILE = os.path.join(DATA_DIR, 'train-labels.idx1-ubyte')
 
 IMAGE_SIZE = 784
+MAX_TESTING_IMAGES = 20
 MAX_TRAINING_IMAGES = 1000
-MAX_TESTING_IMAGES = 5
 
 # Convert bytes to integers using big endian format as specified on the MNIST Database website
 def bytes_to_int(byte_data): 
@@ -35,7 +38,7 @@ def read_images(file_name, max_image_count=None):
             for row_idx in range(row_count):
                 row = []
                 for column_idx in range(column_count):
-                    pixel = f.read(1)
+                    pixel = bytes_to_int(f.read(1))
                     row.append(pixel)
                 image.append(row)
             images.append(image)
@@ -54,7 +57,7 @@ def read_labels(file_name, max_label_count=None):
             label_count = max_label_count
 
         for label_idx in range(label_count):
-            label = f.read(1)
+            label = bytes_to_int(f.read(1))
             labels.append(label)
 
     return labels
@@ -80,7 +83,7 @@ def extract_features(X): # X is the dataset of images
 def dist(image, test_image):
     distance = 0
     for i in range(IMAGE_SIZE):
-        distance += ((bytes_to_int(image[i]) - bytes_to_int(test_image[i])) ** 2)
+        distance += ((image[i] - test_image[i]) ** 2)
 
     distance = math.sqrt(distance)
 
@@ -110,11 +113,11 @@ def k_nearest_neighbours(X_train, y_train, X_test, k=3):
 
         probable_digits = []
         for i in k_nearest_digits:
-            probable_digits.append(bytes_to_int(y_train[i]))
+            probable_digits.append(y_train[i])
 
-        print(probable_digits)
+        predicted_digit = max(probable_digits, key=probable_digits.count)
 
-        y_image = 5
+        y_image = predicted_digit
 
         y_predicted.append(y_image)
 
@@ -126,10 +129,28 @@ def main():
     X_test = read_images(TEST_IMAGES_FILE, MAX_TESTING_IMAGES)
     y_test = read_labels(TEST_LABELS_FILE, MAX_TESTING_IMAGES)
 
+    # The following commented out code is to save the images being tested to a directory called 'imgs', a slight modification of the read_images function is required for this to work (Have to remove byte_to_int while reading pixels)
+
+    # for idx, test_image in enumerate(X_test):
+    #     if not os.path.exists(IMAGES_DIR):
+    #         os.makedirs(IMAGES_DIR)
+    #     behold.write_image(test_image, os.path.join(IMAGES_DIR, f'{idx}.png'))
+
     X_train = extract_features(X_train)
     X_test = extract_features(X_test)
 
-    k_nearest_neighbours(X_train, y_train, X_test, 3)
+    y_predicted = k_nearest_neighbours(X_train, y_train, X_test, 3)
 
+    correct_predictions = 0
+
+    for y_predicted_i, y_test_i in zip(y_predicted, y_test):
+        correct_predictions += (y_predicted_i == y_test_i)
+
+    accuracy = correct_predictions / len(y_test)
+
+    print(f'Actual Digits: {y_test}')
+    print(f'Predicted Digits: {y_predicted}')
+    print(f'Accuracy: {accuracy * 100}%')
+    
 if __name__ == '__main__':
     main()
