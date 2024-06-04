@@ -9,10 +9,12 @@ TRAIN_LABELS_FILE = os.path.join(DATA_DIR, 'train-labels.idx1-ubyte')
 
 MAX_IMAGES = 100
 
-def bytes_to_int(byte_data):
-    # Convert bytes to integers using big endian format as specified on the MNIST Database website
+# Convert bytes to integers using big endian format as specified on the MNIST Database website
+def bytes_to_int(byte_data): 
     return int.from_bytes(byte_data, byteorder='big', signed=False)
 
+# Reads the testing and training images files into a list of images
+# Each image contains rows and columns, with each entry containing the value of the pixel
 def read_images(file_name, max_image_count=None):
     images = []
 
@@ -37,6 +39,7 @@ def read_images(file_name, max_image_count=None):
 
     return images
 
+# Reads the testing and training label files into a list of labels
 def read_labels(file_name, max_label_count=None):
     labels = []
 
@@ -53,11 +56,31 @@ def read_labels(file_name, max_label_count=None):
 
     return labels
 
+# Each image is converted from a 2-D array with rows and columns of pixels into a single list of pixels so that distance can be calculated
+def flatten_image(image):
+    pixels = []
+    for row in image:
+        for column in row:
+            pixels.append(column)
+
+    return pixels
+
+# Returns a list of these flattened images
+def extract_features(X): # X is the dataset of images
+    images = []
+    for image in X:
+        images.append(flatten_image(image))
+
+    return images
+
 def main():
     X_train = read_images(TRAIN_IMAGES_FILE, MAX_IMAGES)
     y_train = read_labels(TRAIN_LABELS_FILE, MAX_IMAGES)
     X_test = read_images(TEST_IMAGES_FILE, MAX_IMAGES)
     y_test = read_labels(TEST_LABELS_FILE, MAX_IMAGES)
+
+    X_train = extract_features(X_train)
+    X_test = extract_features(X_test)
 
 if __name__ == '__main__':
     main()
